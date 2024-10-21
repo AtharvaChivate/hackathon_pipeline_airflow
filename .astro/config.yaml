@@ -1,0 +1,4 @@
+project:
+  name: hackathon_etl_project
+airflow:
+  image: quay.io/astronomer/astro-runtime:5.1.0
