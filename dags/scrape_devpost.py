@@ -1,6 +1,9 @@
 import requests
 import csv
 import logging
+import boto3
+from io import StringIO
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,25 +43,28 @@ def fetch_hackathons(base_url, total_pages):
 
     return all_hackathons
 
-def save_to_csv(hackathons, filename):
+def save_to_s3(hackathons, bucket_name, file_name):
     if hackathons:
         fieldnames = ['Title', 'Location', 'Dates', 'URL']
-        try:
-            with open(filename, mode='w', newline='', encoding='utf-8') as file:
-                writer = csv.DictWriter(file, fieldnames=fieldnames)
-                writer.writeheader()
-                for hackathon in hackathons:
-                    writer.writerow(hackathon)
-            logging.info(f"Successfully saved data to {filename}")
-        except Exception as e:
-            logging.error(f"Failed to save data to {filename}. Error: {e}")
+        csv_buffer = StringIO()
+        writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames)
+        writer.writeheader()
+        for hackathon in hackathons:
+            writer.writerow(hackathon)
+        
+        s3_resource = boto3.resource('s3')
+        s3_resource.Object(bucket_name, file_name).put(Body=csv_buffer.getvalue())
+        logging.info(f"Successfully saved data to S3 bucket: {bucket_name}/{file_name}")
     else:
         logging.warning("No hackathons to save.")
 
+# Main execution
 base_url = "https://devpost.com/api/hackathons"
-total_pages = 5
+total_pages = 3
+bucket_name = "my-hackathon-data-bucket"  # Replace with your bucket name
+file_name = "devpost.csv"
 
 logging.info("Starting the Devpost hackathon scraper.")
 all_hackathons = fetch_hackathons(base_url, total_pages)
-save_to_csv(all_hackathons, "data/devpost.csv")
+save_to_s3(all_hackathons, bucket_name, file_name)
 logging.info("Devpost hackathon scraper finished.")
