@@ -1,48 +1,131 @@
-Overview
-========
+# 🚀 Hackathon Pipeline Airflow
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+A robust ETL pipeline built with Apache Airflow to scrape, process, and store hackathon data from Devpost and Major League Hacking (MLH) platforms.
 
-Project Contents
-================
+## 🎯 Overview
 
-Your Astro project contains the following files and folders:
+This project implements an automated data pipeline that:
+- 🔍 Scrapes hackathon listings from Devpost's API and MLH's website
+- 🔄 Processes and standardizes the data
+- ☁️ Stores the results in AWS S3
+- ⏰ Runs on a daily schedule using Apache Airflow
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+## 🏗️ Architecture
 
-Deploy Your Project Locally
-===========================
+The pipeline consists of three main components:
+1. 🌐 Devpost Scraper: Fetches hackathon data from Devpost's API
+2. 🌍 MLH Scraper: Scrapes hackathon information from MLH's website
+3. 🔧 Data Processor: Combines and cleans the data from both sources
 
-1. Start Airflow on your local machine by running 'astro dev start'.
+## 📋 Prerequisites
 
-This command will spin up 4 Docker containers on your machine, each for a different Airflow component:
+- 🐳 Docker and Docker Compose
+- 🐍 Python 3.8+
+- ☁️ AWS Account with S3 access
+- 🌬️ Apache Airflow 2.5.0
+- 🛠️ Astronomer CLI
 
-- Postgres: Airflow's Metadata Database
-- Webserver: The Airflow component responsible for rendering the Airflow UI
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+## 📁 Project Structure
 
-2. Verify that all 4 Docker containers were created by running 'docker ps'.
+```
+hackathon_pipeline_airflow/
+├── dags/
+│   └── hackathon_etl_dag.py    # Main Airflow DAG file
+│   └── scrape_devpost.py       # Standalone Devpost scraper
+│   └── scrape_mlh.py           # Standalone MLH scraper
+├── docker-compose.yaml          # Docker configuration
+├── requirements.txt            # Python dependencies
+└── README.md                   # Project documentation
+```
 
-Note: Running 'astro dev start' will start your project with the Airflow Webserver exposed at port 8080 and Postgres exposed at port 5432. If you already have either of those ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+## 🚀 Setup and Installation
 
-3. Access the Airflow UI for your local Airflow project. To do so, go to http://localhost:8080/ and log in with 'admin' for both your Username and Password.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd hackathon_pipeline_airflow
+```
 
-You should also be able to access your Postgres Database at 'localhost:5432/postgres'.
+2. Configure AWS credentials:
+   - ✨ Set up an AWS S3 bucket
+   - 🔑 Create an Airflow connection for AWS credentials in the Airflow UI:
+     - Conn Id: `aws_s3`
+     - Conn Type: `Amazon Web Services`
+     - Login: AWS access key ID
+     - Password: AWS secret access key
+     - Extra: `{"region_name": "ap-south-1"}`
 
-Deploy Your Project to Astronomer
-=================================
+3. Start Airflow using Astro CLI:
+```bash
+astro dev start
+```
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+This command will spin up 4 Docker containers on your machine:
+- 📊 Postgres: Airflow's Metadata Database
+- 🖥️ Webserver: The Airflow component for rendering the Airflow UI
+- ⚙️ Scheduler: The Airflow component for monitoring and triggering tasks
+- 🔄 Triggerer: The Airflow component for triggering deferred tasks
 
-Contact
-=======
+4. Verify the containers:
+```bash
+docker ps
+```
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+5. Access the Airflow UI:
+   - 🌐 URL: `http://localhost:8080`
+   - 👤 Username: `admin`
+   - 🔒 Password: `admin`
+
+Note: If ports 8080 (Webserver) or 5432 (Postgres) are already in use, you can either stop existing Docker containers or change the ports following [Astronomer's documentation](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+
+## ⚙️ DAG Configuration
+
+The main DAG (`hackathon_etl_dag.py`) runs daily and consists of three tasks:
+1. 🌐 `scrape_devpost`: Fetches data from Devpost API
+2. 🌍 `scrape_mlh`: Scrapes data from MLH website
+3. 🔄 `combine_and_clean`: Merges and processes data from both sources
+
+## 💾 Data Storage
+
+The pipeline stores data in three S3 files:
+- 📁 `devpost.csv`: Raw data from Devpost
+- 📁 `mlh.csv`: Raw data from MLH
+- 📁 `combined.csv`: Processed and cleaned data from both sources
+
+## 👩‍💻 Development
+
+To run the scrapers independently of Airflow:
+
+```bash
+# Run Devpost scraper
+python scripts/scrape_devpost.py
+
+# Run MLH scraper
+python scripts/scrape_mlh.py
+```
+
+## 🚨 Error Handling
+
+The pipeline includes comprehensive error handling and logging:
+- ❌ Failed API requests are logged and retried
+- ✅ Data validation checks are performed at each stage
+- 📧 Task failures trigger email notifications (when configured)
+
+## 📊 Monitoring
+
+Monitor the pipeline through:
+- 📺 Airflow UI dashboard
+- 📝 Logging system (configured to INFO level)
+- 📈 AWS S3 bucket metrics
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## 🌟 Deploy to Astronomer
+
+If you have an Astronomer account, you can deploy this project to Astronomer. For detailed deployment instructions, refer to [Astronomer's documentation](https://www.astronomer.io/docs/astro/deploy-code/).
